@@ -1,9 +1,26 @@
 import openpyxl as xls
+from openpyxl.styles import PatternFill
+from time import sleep
 import datetime as time
 
-"""OBSERVAÇÕES DE USO
-Precisa atualizar o ano para conferir as segundas-feiras
-"""
+#messages that will be presented/asked to the user
+User_message = ''' 
+ATENÇÃO: 
+Para que este programa funcione, não devem haver colunas mescladas na planilha original;
+as datas de início e término de cada etapa devem estar numa mesma célula, no formato "dd/mm até dd/mm";
+as datas devem estar arranjadas em colunas, não em linhas;
+o cronograma montado irá apagar dados que estejam no espaço indicado pelo usuário.\n
+Por favor, indique os seguintes dados (digite os dados pedidos, sem espaços, e aperte Enter):\n'''
+path_message = 'Caminho do arquivo (ex: C:/Usuários/USUARIO/Downloads/arquivo.xlsx): '
+sheet_name_message = 'Nome da planilha (ex: Planilha1): '
+planned_column_message = 'Coluna com as datas previstas no projeto (coloque um número, não a letra: coluna A é número 1, etc.): '
+actual_column_message = 'Coluna com as datas realizadas na execução (coloque um número, não a letra: coluna A é número 1, etc.): '
+first_colored_column_message = 'Coluna que indicará a primeira semana da obra (as outras estarão à direita)(coloque um número): '
+top_line_message = 'Linha que será o topo do cronograma, indicando as semanas (coloque um número): '
+final_user_message = 'Pronto! Agora você já tem uma nova planilha atualizada no mesmo local que a original.'
+
+
+
 year = time.datetime.now().year
 
 # givens:
@@ -124,15 +141,66 @@ def write_n_paint(file_path_main, sheet_name, top_line, first_colored_col, info)
     first_last_days = get_first_n_last_day(info=info)
     weeks = get_weeks(list=first_last_days)
 
-    
+    planned_fill = PatternFill(start_color='99CCFF', patternType='solid')
+    actual_fill = PatternFill(start_color='FF0000', patternType='solid')
+    WHITE = PatternFill(start_color='FFFFFF', patternType='solid')
 
+    week_time = time.timedelta(days=7)
+
+    #write the weeks on the top line
     for i in range(0, len(weeks)):
         cell = ws.cell(row=top_line, column= first_colored_col + i)
         week = weeks[i]
         cell.value = f'{week[0]} até {week[1]}'
 
+
+    #go through each line and paint
+    for i in range(0, len(info)):
+        line_info = info[i]
+        line = line_info[0]
+        begin_planned = line_info[1]
+        finish_planned = line_info[2]
+        begin_actual = line_info[3]
+        finish_actual = line_info[4]
+
+        #find begin_planned week
+        for j in range(0, len(weeks)):
+            if begin_planned - weeks[j][0] < week_time:
+                break
+        #find finish_planned week
+        for k in range(0, len(weeks)):
+            if finish_planned - weeks[k][0] < week_time:
+                break
+        
+        #fill planned weeks
+        col_delta_set_planned = {x for x in range(j, k+1)}
+        for col_delta in range(0, len(weeks)):
+            cell = ws.cell(row=line, column=first_colored_col + col_delta)
+            if col_delta in col_delta_set_planned:     #fill planned weeks with light blue
+                cell.fill = planned_fill
+            else:                               #paint previous schedule with white
+                cell.fill = WHITE
+
+        if begin_actual != None and finish_actual != None:
+            #find begin_actual week
+            for j in range(0, len(weeks)):
+                if begin_actual - weeks[j][0] < week_time:
+                    break
+            #find finish_actual week
+            for k in range(0, len(weeks)):
+                if finish_actual - weeks[k][0] < week_time:
+                    break
+
+            #fill actual weeks
+            col_delta_set_actual = {x for x in range(j, k+1)}-col_delta_set_planned
+            if len(col_delta_set_actual) != 0:
+                for col_delta in col_delta_set_actual:
+                    cell = ws.cell(row=line, column=first_colored_col + col_delta)
+                    cell.fill = actual_fill
+
+
     file_path = file_path_main.split('.')
-    file_path.insert(-1, 'copy')        #changes the name
+    file_path.insert(-1, 'Copy')        #changes the name
     file_path[-1] = '.xlsx'             #puts back the . in front of xlsx
     file_path = ''.join(file_path)      #doesn't erase the original data, creates a copy file
     wb.save(filename=file_path)         #save edits to copy file
@@ -140,7 +208,16 @@ def write_n_paint(file_path_main, sheet_name, top_line, first_colored_col, info)
 
 
 if __name__ == '__main__':
-    file_path_main = 'C:/Users/USUARIO/Downloads/Cronograma.xlsx'
-    sheet_name = 'Planilha1'
-    info = get_stage_dates(file_path=file_path_main, sheet_name=sheet_name, planned_col=6, actual_col=7, top_line=5)
-    write_n_paint(file_path_main=file_path_main, sheet_name=sheet_name, top_line=5, first_colored_col=8, info=info)
+    print(User_message)
+    file_path_main = input(path_message)
+    sheet_name = input(sheet_name_message)
+    planned_column = input(planned_column_message)
+    actual_column = input(actual_column_message)
+    first_colored_column = input(first_colored_column_message)
+    top_line = input(top_line_message)
+
+    info = get_stage_dates(file_path_main, sheet_name, planned_column, actual_column, top_line)
+    write_n_paint(file_path_main, sheet_name, top_line, first_colored_column, info)
+
+    print(final_user_message)
+    sleep(3)
