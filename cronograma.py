@@ -9,7 +9,7 @@ year = time.datetime.now().year
 # givens:
 # planned_col, actual_col, top_line (contains the dates), file_path (from C:/), first_colored_col, sheet_name
 
-file_path = 'C:/Users/USUARIO/Downloads/Cronograma.xlsx'
+file_path = 'C:/Users/USUARIO/Downloads/teste.xlsx'
 sheet_name = 'Planilha1'
 
 
@@ -95,4 +95,11 @@ def get_weeks(begin, finish):
     weeks = [[mondays[i], fridays[i]] for i in range(0, len(mondays))]      #[[monday1, friday1], [mon2, fri2], ...]
     return weeks
 
-print(get_stage_dates(file_path=file_path, sheet_name=sheet_name, planned_col=6, actual_col=7, top_line=5))
+def write_n_paint(file_path, sheet_name, top_col, first_colored_col, info):
+    wb = xls.load_workbook(filename=file_path, read_only=False)
+    ws = wb[sheet_name]
+    cell = ws.cell(row=5, column=3)
+    cell.value = 'cavalo'
+    wb.save(filename=file_path)
+
+write_n_paint(file_path=file_path, sheet_name=sheet_name, top_col=1, first_colored_col=1, info=[])
