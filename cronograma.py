@@ -9,9 +9,6 @@ year = time.datetime.now().year
 # givens:
 # planned_col, actual_col, top_line (contains the dates), file_path (from C:/), first_colored_col, sheet_name
 
-file_path = 'C:/Users/USUARIO/Downloads/teste.xlsx'
-sheet_name = 'Planilha1'
-
 
 def get_stage_dates(file_path, sheet_name, planned_col, actual_col, top_line):
     '''considera duas cells adjacentes com texto no formato "dd/mm até dd/mm" e assume que está no ano atual
@@ -63,9 +60,11 @@ def get_stage_dates(file_path, sheet_name, planned_col, actual_col, top_line):
     return stages_info
 
 
-def get_weeks(begin, finish):
-    begin_date = begin
-    finish_date = finish
+def get_weeks(list):
+    '''Input: list of the form [first day, last day], both datetime.Date objects.'''
+
+    begin_date = list[0]
+    finish_date = list[1]
     day = time.timedelta(days=1)
     week = time.timedelta(days=7)
 
@@ -95,11 +94,53 @@ def get_weeks(begin, finish):
     weeks = [[mondays[i], fridays[i]] for i in range(0, len(mondays))]      #[[monday1, friday1], [mon2, fri2], ...]
     return weeks
 
-def write_n_paint(file_path, sheet_name, top_col, first_colored_col, info):
-    wb = xls.load_workbook(filename=file_path, read_only=False)
-    ws = wb[sheet_name]
-    cell = ws.cell(row=5, column=3)
-    cell.value = 'cavalo'
-    wb.save(filename=file_path)
+def get_first_n_last_day(info):
+    '''Input: list from get_stage_dates, containing lists of the form [line, planned begin date, planned finish date, actual begin date, actual finish date]
+    Returns a list containing two datetime.Date objects, representing the first and last day of construction.
+    Main use is to get information for the get_weeks function, which needs these endpoints.'''
+    first = info[0][1]
+    last = info[-1][2]
 
-write_n_paint(file_path=file_path, sheet_name=sheet_name, top_col=1, first_colored_col=1, info=[])
+    for i in range(0, len(info)):
+        plan_begin = info[i][1]
+        if plan_begin - first < time.timedelta():
+            first = plan_begin
+        
+        plan_finish = info[i][2]
+        actual_finish = info[i][4]
+        if actual_finish == None:
+            if plan_finish - last > time.timedelta():
+                last = plan_finish
+        else:
+            if actual_finish - last > time.timedelta():
+                last = actual_finish
+
+    return [first, last]
+
+def write_n_paint(file_path_main, sheet_name, top_line, first_colored_col, info):
+    wb = xls.load_workbook(filename=file_path_main, read_only=False)
+    ws = wb[sheet_name]
+
+    first_last_days = get_first_n_last_day(info=info)
+    weeks = get_weeks(list=first_last_days)
+
+    
+
+    for i in range(0, len(weeks)):
+        cell = ws.cell(row=top_line, column= first_colored_col + i)
+        week = weeks[i]
+        cell.value = f'{week[0]} até {week[1]}'
+
+    file_path = file_path_main.split('.')
+    file_path.insert(-1, 'copy')        #changes the name
+    file_path[-1] = '.xlsx'             #puts back the . in front of xlsx
+    file_path = ''.join(file_path)      #doesn't erase the original data, creates a copy file
+    wb.save(filename=file_path)         #save edits to copy file
+
+
+
+if __name__ == '__main__':
+    file_path_main = 'C:/Users/USUARIO/Downloads/Cronograma.xlsx'
+    sheet_name = 'Planilha1'
+    info = get_stage_dates(file_path=file_path_main, sheet_name=sheet_name, planned_col=6, actual_col=7, top_line=5)
+    write_n_paint(file_path_main=file_path_main, sheet_name=sheet_name, top_line=5, first_colored_col=8, info=info)
