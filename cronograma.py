@@ -50,21 +50,35 @@ def get_stage_dates(file_path, sheet_name, planned_col, actual_col, top_line):
             empty_lines_counter += 1
             line += 1
 
-        elif text1 != None:
-            substrings_planned = text1.split(' ')       #['dd/mm', 'até', 'dd/mm']  planned dates
-            begin_list_planned = substrings_planned[0].split('/')       #['dd', 'mm']
-            finish_list_planned = substrings_planned[2].split('/')      #['dd', 'mm']
-            dates_planned = [time.date(year, int(begin_list_planned[1]), int(begin_list_planned[0])), 
-                        time.date(year, int(finish_list_planned[1]), int(finish_list_planned[0]))]
+        else:
+            #planned dates
+            # only dd/mm/yyyy in excel cell gives datetime object, not str /// stage with just one day
+            if type(text1) == time.datetime:
+                begin_list_planned = time.date(text1.year, text1.month, text1.day)      #makes these Date instead of Datetime for sake of standardization
+                finish_list_planned = time.date(text1.year, text1.month, text1.day)
+                dates_planned = [begin_list_planned, finish_list_planned]
+            #['dd/mm', 'até', 'dd/mm']  planned dates /// stage with multiple days
+            else:
+                substrings_planned = text1.split(' ')       
+                begin_list_planned = substrings_planned[0].split('/')       #['dd', 'mm']
+                finish_list_planned = substrings_planned[2].split('/')      #['dd', 'mm']
+                dates_planned = [time.date(year, int(begin_list_planned[1]), int(begin_list_planned[0])), 
+                                 time.date(year, int(finish_list_planned[1]), int(finish_list_planned[0]))]
 
-            if text2 != None:
-                substrings_actual = text2.split(' ')        #same but for the executed dates
-                begin_list_actual = substrings_actual[0].split('/')
-                finish_list_actual = substrings_actual[2].split('/')
-                dates_actual = [time.date(year, int(begin_list_actual[1]), int(begin_list_actual[0])), 
-                                time.date(year, int(finish_list_actual[1]), int(finish_list_actual[0]))]
-            elif text2 == None:
+            if text2 == None:
                 dates_actual = [None, None]
+            # actual dates
+            else:
+                if type(text2) == time.datetime:
+                    begin_list_actual = time.date(text2.year, text2.month, text2.day)
+                    finish_list_actual = time.date(text2.year, text2.month, text2.day)
+                    dates_actual = [begin_list_actual, finish_list_actual]
+                else:
+                    substrings_actual = text2.split(' ')
+                    begin_list_actual = substrings_actual[0].split('/')
+                    finish_list_actual = substrings_actual[2].split('/')
+                    dates_actual = [time.date(year, int(begin_list_actual[1]), int(begin_list_actual[0])), 
+                                    time.date(year, int(finish_list_actual[1]), int(finish_list_actual[0]))]
             
             info = [line]+dates_planned+dates_actual        #[line, planned begin date, planned finish date, actual begin date, actual finish date]
             stages_info.append(info)
@@ -224,6 +238,7 @@ if __name__ == '__main__':
 
         top_line = int(input(top_line_message))
         highlighted_lines_input = input(highlighted_lines_message).split(',')
+        
         if highlighted_lines_input != ['']:
             highlighted_lines = [int(x) for x in highlighted_lines_input]
         else:
