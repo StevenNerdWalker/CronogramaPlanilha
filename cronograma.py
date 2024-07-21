@@ -7,10 +7,10 @@ import datetime as time
 User_message = ''' 
 ATENÇÃO: 
 Para que este programa funcione:\n
-não devem haver colunas mescladas na planilha original;\n
-as datas de início e término de cada etapa devem estar numa mesma célula, no formato "dd/mm até dd/mm";\n
-as datas devem estar arranjadas em colunas, não em linhas;\n
-o cronograma montado irá apagar dados que estejam no espaço indicado pelo usuário.\n\n
+não devem haver colunas mescladas na planilha original;
+as datas de início e término de cada etapa devem estar numa mesma célula, no formato "dd/mm até dd/mm";
+as datas devem estar arranjadas em colunas, não em linhas;
+o cronograma montado irá apagar dados que estejam no espaço indicado pelo usuário.\n
 Por favor, indique os seguintes dados (digite os dados pedidos, sem espaços no começo ou no final, e aperte Enter):\n'''
 path_message = 'Caminho do arquivo (ex: C:/Usuários/USUARIO/Downloads/arquivo.xlsx) (OBS: use a barra assim / e não \): '
 sheet_name_message = 'Nome da planilha (ex: Planilha1): '
@@ -236,8 +236,6 @@ if __name__ == '__main__':
         sleep(10)
 
     except Exception as exception:
-        print(f'Ocorreu um erro: {exception}')
-        with open('C:/erro.txt', 'w') as file:
-            file.write(f'Ocorreu um erro: {exception}')
-        print('Tem um arquivo com a descrição do erro em C:/erro.txt')
-        sleep(10)
+        print(f'\nOcorreu um erro: {exception}')
+        print('Tente novamente, ou, se o erro persistir, tire uma foto dessa mensagem de erro e mostre para um técnico que estiver acessível.')
+        sleep(15)
