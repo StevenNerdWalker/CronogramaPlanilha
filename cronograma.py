@@ -6,17 +6,19 @@ import datetime as time
 #messages that will be presented/asked to the user
 User_message = ''' 
 ATENÇÃO: 
-Para que este programa funcione, não devem haver colunas mescladas na planilha original;
-as datas de início e término de cada etapa devem estar numa mesma célula, no formato "dd/mm até dd/mm";
-as datas devem estar arranjadas em colunas, não em linhas;
-o cronograma montado irá apagar dados que estejam no espaço indicado pelo usuário.\n
-Por favor, indique os seguintes dados (digite os dados pedidos, sem espaços, e aperte Enter):\n'''
-path_message = 'Caminho do arquivo (ex: C:/Usuários/USUARIO/Downloads/arquivo.xlsx): '
+Para que este programa funcione:\n
+não devem haver colunas mescladas na planilha original;\n
+as datas de início e término de cada etapa devem estar numa mesma célula, no formato "dd/mm até dd/mm";\n
+as datas devem estar arranjadas em colunas, não em linhas;\n
+o cronograma montado irá apagar dados que estejam no espaço indicado pelo usuário.\n\n
+Por favor, indique os seguintes dados (digite os dados pedidos, sem espaços no começo ou no final, e aperte Enter):\n'''
+path_message = 'Caminho do arquivo (ex: C:/Usuários/USUARIO/Downloads/arquivo.xlsx) (OBS: use a barra assim / e não \): '
 sheet_name_message = 'Nome da planilha (ex: Planilha1): '
-planned_column_message = 'Coluna com as datas previstas no projeto (coloque um número, não a letra: coluna A é número 1, etc.): '
+planned_column_message = '\nColuna com as datas previstas no projeto (coloque um número, não a letra: coluna A é número 1, etc.): '
 actual_column_message = 'Coluna com as datas realizadas na execução (coloque um número, não a letra: coluna A é número 1, etc.): '
 first_colored_column_message = 'Coluna que indicará a primeira semana da obra (as outras estarão à direita)(coloque um número): '
-top_line_message = 'Linha que será o topo do cronograma, indicando as semanas (coloque um número): '
+top_line_message = '\nLinha que será o topo do cronograma, indicando as semanas (coloque um número): '
+highlighted_lines_message = 'Linhas de destaque (terão cor diferente das outras) (coloque números separados por vírgula, sem espaços, ex: 5,17,23) (se não houverem, só aperte Enter): '
 final_user_message = 'Pronto! Agora você já tem uma nova planilha atualizada no mesmo local que a original.'
 
 
@@ -134,7 +136,7 @@ def get_first_n_last_day(info):
 
     return [first, last]
 
-def write_n_paint(file_path_main, sheet_name, top_line, first_colored_col, info):
+def write_n_paint(file_path_main, sheet_name, top_line, first_colored_col, info, highlighted_lines):
     wb = xls.load_workbook(filename=file_path_main, read_only=False)
     ws = wb[sheet_name]
 
@@ -143,6 +145,7 @@ def write_n_paint(file_path_main, sheet_name, top_line, first_colored_col, info)
 
     planned_fill = PatternFill(start_color='99CCFF', patternType='solid')
     actual_fill = PatternFill(start_color='FF0000', patternType='solid')
+    highlighted_fill = PatternFill(start_color='55FF55', patternType='solid')
     WHITE = PatternFill(start_color='FFFFFF', patternType='solid')
 
     week_time = time.timedelta(days=7)
@@ -151,7 +154,7 @@ def write_n_paint(file_path_main, sheet_name, top_line, first_colored_col, info)
     for i in range(0, len(weeks)):
         cell = ws.cell(row=top_line, column= first_colored_col + i)
         week = weeks[i]
-        cell.value = f'{week[0]} até {week[1]}'
+        cell.value = f'{week[0].day}/{week[0].month}/{week[0].year - 2000} até {week[1].day}/{week[1].month}/{week[1 ].year - 2000}'    #print dates in "dd/mm/yy até dd/mm/yy format"
 
 
     #go through each line and paint
@@ -170,14 +173,16 @@ def write_n_paint(file_path_main, sheet_name, top_line, first_colored_col, info)
         #find finish_planned week
         for k in range(0, len(weeks)):
             if finish_planned - weeks[k][0] < week_time:
-                break
-        
+                break  
         #fill planned weeks
         col_delta_set_planned = {x for x in range(j, k+1)}
         for col_delta in range(0, len(weeks)):
             cell = ws.cell(row=line, column=first_colored_col + col_delta)
-            if col_delta in col_delta_set_planned:     #fill planned weeks with light blue
-                cell.fill = planned_fill
+            if col_delta in col_delta_set_planned:     #fill planned weeks
+                if line in highlighted_lines:
+                    cell.fill = highlighted_fill
+                else:
+                    cell.fill = planned_fill
             else:                               #paint previous schedule with white
                 cell.fill = WHITE
 
@@ -190,7 +195,6 @@ def write_n_paint(file_path_main, sheet_name, top_line, first_colored_col, info)
             for k in range(0, len(weeks)):
                 if finish_actual - weeks[k][0] < week_time:
                     break
-
             #fill actual weeks
             col_delta_set_actual = {x for x in range(j, k+1)}-col_delta_set_planned
             if len(col_delta_set_actual) != 0:
@@ -208,16 +212,32 @@ def write_n_paint(file_path_main, sheet_name, top_line, first_colored_col, info)
 
 
 if __name__ == '__main__':
-    print(User_message)
-    file_path_main = input(path_message)
-    sheet_name = input(sheet_name_message)
-    planned_column = int(input(planned_column_message))
-    actual_column = int(input(actual_column_message))
-    first_colored_column = int(input(first_colored_column_message))
-    top_line = int(input(top_line_message))
+    try:
+        print(User_message)
 
-    info = get_stage_dates(file_path_main, sheet_name, planned_column, actual_column, top_line)
-    write_n_paint(file_path_main, sheet_name, top_line, first_colored_column, info)
+        file_path_main = input(path_message)
+        sheet_name = input(sheet_name_message)
 
-    print(final_user_message)
-    sleep(3)
+        planned_column = int(input(planned_column_message))
+        actual_column = int(input(actual_column_message))
+        first_colored_column = int(input(first_colored_column_message))
+
+        top_line = int(input(top_line_message))
+        highlighted_lines_input = input(highlighted_lines_message).split(',')
+        if highlighted_lines_input != ['']:
+            highlighted_lines = [int(x) for x in highlighted_lines_input]
+        else:
+            highlighted_lines = []
+
+        info = get_stage_dates(file_path_main, sheet_name, planned_column, actual_column, top_line)
+        write_n_paint(file_path_main, sheet_name, top_line, first_colored_column, info, highlighted_lines)
+
+        print('\n\n', final_user_message)
+        sleep(10)
+
+    except Exception as exception:
+        print(f'Ocorreu um erro: {exception}')
+        with open('C:/erro.txt', 'w') as file:
+            file.write(f'Ocorreu um erro: {exception}')
+        print('Tem um arquivo com a descrição do erro em C:/erro.txt')
+        sleep(10)
